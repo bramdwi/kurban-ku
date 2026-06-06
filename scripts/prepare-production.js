@@ -23,9 +23,7 @@ try {
 }`;
 
   const postgresDatasource = `datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }`;
 
   if (schemaContent.includes(sqliteDatasource)) {
@@ -58,13 +56,19 @@ const createPrismaClient = () => {
 };`;
 
   const postgresClientBlock = `import { PrismaClient } from '@prisma/client';
+import { Client } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
 const createPrismaClient = () => {
+  const client = new Client({ connectionString: process.env.DATABASE_URL });
+  client.connect();
+  const adapter = new PrismaPg(client);
   return new PrismaClient({
+    adapter,
     log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
   });
 };`;
@@ -72,9 +76,9 @@ const createPrismaClient = () => {
   if (prismaContent.includes(sqliteClientBlock)) {
     prismaContent = prismaContent.replace(sqliteClientBlock, postgresClientBlock);
     fs.writeFileSync(prismaClientPath, prismaContent, 'utf8');
-    console.log('Successfully updated src/lib/prisma.ts to standard PrismaClient.');
+    console.log('Successfully updated src/lib/prisma.ts to PostgreSQL PrismaPg adapter.');
   } else {
-    console.log('src/lib/prisma.ts already uses standard PrismaClient.');
+    console.log('src/lib/prisma.ts already uses PostgreSQL PrismaPg adapter.');
   }
 
   // 3. Regenerate Prisma Client
