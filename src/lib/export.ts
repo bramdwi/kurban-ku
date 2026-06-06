@@ -1,6 +1,5 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
 import { formatCurrency, formatNumber, getSpeciesLabel, getStatusConfig } from "./utils";
 
 // Helper for formatting dates
@@ -10,127 +9,112 @@ const getExportDateString = () => {
 };
 
 // ==========================================
-// EXCEL EXPORT FUNCTIONS
+// CSV EXPORT FUNCTIONS (Safe and zero-dependency alternative to XLSX)
 // ==========================================
 
 export function exportToExcel(type: string, data: any) {
-  const wb = XLSX.utils.book_new();
+  let csvContent = "\uFEFF"; // UTF-8 BOM for Excel compatibility
+
+  const escapeCSV = (val: any) => {
+    const stringVal = val === null || val === undefined ? "" : String(val);
+    if (stringVal.includes(",") || stringVal.includes('"') || stringVal.includes("\n") || stringVal.includes("\r")) {
+      return `"${stringVal.replace(/"/g, '""')}"`;
+    }
+    return stringVal;
+  };
 
   if (type === "financial") {
-    // 1. Summary Sheet
-    const summaryData = [
-      { Indikator: "Total Pendapatan", Nilai: data.totalRevenue },
-      { Indikator: "Total Terbayar", Nilai: data.totalPaid },
-      { Indikator: "Sisa Hutang", Nilai: data.totalDebt },
-      { Indikator: "Total Modal Pembelian", Nilai: data.totalPurchaseCost },
-      { Indikator: "Laba Kotor", Nilai: data.grossProfit },
-      { Indikator: "Biaya Operasional", Nilai: data.totalExpenses },
-      { Indikator: "Laba Bersih", Nilai: data.netProfit },
-    ];
-    const wsSummary = XLSX.utils.json_to_sheet(summaryData);
-    XLSX.utils.book_append_sheet(wb, wsSummary, "Ringkasan Keuangan");
+    csvContent += "RINGKASAN KEUANGAN\n";
+    csvContent += "Indikator,Nilai\n";
+    csvContent += `Total Pendapatan,${data.totalRevenue}\n`;
+    csvContent += `Total Terbayar,${data.totalPaid}\n`;
+    csvContent += `Sisa Hutang,${data.totalDebt}\n`;
+    csvContent += `Total Modal Pembelian,${data.totalPurchaseCost}\n`;
+    csvContent += `Laba Kotor,${data.grossProfit}\n`;
+    csvContent += `Biaya Operasional,${data.totalExpenses}\n`;
+    csvContent += `Laba Bersih,${data.netProfit}\n\n`;
 
-    // 2. Monthly Breakdown Sheet
     if (data.monthlyBreakdown && data.monthlyBreakdown.length > 0) {
-      const monthlyData = data.monthlyBreakdown.map((m: any) => ({
-        Bulan: m.month,
-        "Jumlah Transaksi": m.count,
-        Pendapatan: m.revenue,
-        "Laba Bersih": m.profit,
-      }));
-      const wsMonthly = XLSX.utils.json_to_sheet(monthlyData);
-      XLSX.utils.book_append_sheet(wb, wsMonthly, "Breakdown Bulanan");
+      csvContent += "BREAKDOWN BULANAN\n";
+      csvContent += "Bulan,Jumlah Transaksi,Pendapatan,Laba Bersih\n";
+      data.monthlyBreakdown.forEach((m: any) => {
+        csvContent += `${escapeCSV(m.month)},${m.count},${m.revenue},${m.profit}\n`;
+      });
     }
 
   } else if (type === "sales") {
-    // 1. Sales Summary
-    const summaryData = [
-      { Indikator: "Total Transaksi", Nilai: data.totalTransactions },
-      { Indikator: "Total Hewan Terjual", Nilai: data.totalAnimals },
-      { Indikator: "Total Nilai Penjualan", Nilai: data.totalRevenue },
-    ];
-    const wsSummary = XLSX.utils.json_to_sheet(summaryData);
-    XLSX.utils.book_append_sheet(wb, wsSummary, "Ringkasan Penjualan");
+    csvContent += "RINGKASAN PENJUALAN\n";
+    csvContent += "Indikator,Nilai\n";
+    csvContent += `Total Transaksi,${data.totalTransactions}\n`;
+    csvContent += `Total Hewan Terjual,${data.totalAnimals}\n`;
+    csvContent += `Total Nilai Penjualan,${data.totalRevenue}\n\n`;
 
-    // 2. Species Breakdown
     if (data.speciesBreakdown && data.speciesBreakdown.length > 0) {
-      const speciesData = data.speciesBreakdown.map((sp: any) => ({
-        "Jenis Hewan": getSpeciesLabel(sp.species),
-        "Jumlah Terjual (Ekor)": sp.count,
-        Pendapatan: sp.revenue,
-      }));
-      const wsSpecies = XLSX.utils.json_to_sheet(speciesData);
-      XLSX.utils.book_append_sheet(wb, wsSpecies, "Penjualan per Jenis");
+      csvContent += "PENJUALAN PER JENIS HEWAN\n";
+      csvContent += "Jenis Hewan,Jumlah Terjual (Ekor),Pendapatan\n";
+      data.speciesBreakdown.forEach((sp: any) => {
+        csvContent += `${escapeCSV(getSpeciesLabel(sp.species))},${sp.count},${sp.revenue}\n`;
+      });
+      csvContent += "\n";
     }
 
-    // 3. Top Buyers
     if (data.topBuyers && data.topBuyers.length > 0) {
-      const buyersData = data.topBuyers.map((b: any, idx: number) => ({
-        Peringkat: idx + 1,
-        Nama: b.name,
-        "Jumlah Transaksi": b.count,
-        "Total Pembelian": b.totalSpent,
-      }));
-      const wsBuyers = XLSX.utils.json_to_sheet(buyersData);
-      XLSX.utils.book_append_sheet(wb, wsBuyers, "Top Pembeli");
+      csvContent += "TOP PEMBELI\n";
+      csvContent += "Peringkat,Nama,Jumlah Transaksi,Total Pembelian\n";
+      data.topBuyers.forEach((b: any, idx: number) => {
+        csvContent += `${idx + 1},${escapeCSV(b.name)},${b.count},${b.totalSpent}\n`;
+      });
     }
 
   } else if (type === "animal") {
-    // 1. Stock Summary
-    const summaryData = [
-      { Status: "Tersedia (AVAILABLE)", Jumlah: data.statusCounts?.AVAILABLE || 0 },
-      { Status: "Dipesan (BOOKED)", Jumlah: data.statusCounts?.BOOKED || 0 },
-      { Status: "Terjual (SOLD)", Jumlah: data.statusCounts?.SOLD || 0 },
-      { Status: "Mati (DEAD)", Jumlah: data.statusCounts?.DEAD || 0 },
-      { Status: "Valuasi Stok Tersedia (Harga Jual)", Jumlah: data.totalStockValue || 0 },
-      { Status: "Valuasi Stok Tersedia (Harga Modal)", Jumlah: data.totalPurchaseValue || 0 },
-      { Status: "Potensi Keuntungan Stok Tersedia", Jumlah: (data.totalStockValue || 0) - (data.totalPurchaseValue || 0) },
-    ];
-    const wsSummary = XLSX.utils.json_to_sheet(summaryData);
-    XLSX.utils.book_append_sheet(wb, wsSummary, "Ringkasan Stok");
+    csvContent += "RINGKASAN STOK HEWAN\n";
+    csvContent += "Status / Kategori,Jumlah\n";
+    csvContent += `Tersedia (AVAILABLE),${data.statusCounts?.AVAILABLE || 0}\n`;
+    csvContent += `Dipesan (BOOKED),${data.statusCounts?.BOOKED || 0}\n`;
+    csvContent += `Terjual (SOLD),${data.statusCounts?.SOLD || 0}\n`;
+    csvContent += `Mati (DEAD),${data.statusCounts?.DEAD || 0}\n`;
+    csvContent += `Valuasi Stok Tersedia (Harga Jual),${data.totalStockValue || 0}\n`;
+    csvContent += `Valuasi Stok Tersedia (Harga Modal),${data.totalPurchaseValue || 0}\n`;
+    csvContent += `Potensi Keuntungan Stok Tersedia,${(data.totalStockValue || 0) - (data.totalPurchaseValue || 0)}\n\n`;
 
-    // 2. Species Stock Detail
     if (data.speciesStock && data.speciesStock.length > 0) {
-      const speciesData = data.speciesStock.map((sp: any) => ({
-        "Jenis Hewan": getSpeciesLabel(sp.species),
-        "Total Stok (Ekor)": sp.total,
-        Tersedia: sp.available,
-        Terjual: sp.sold,
-        "Nilai Jual Stok": sp.totalValue,
-      }));
-      const wsSpecies = XLSX.utils.json_to_sheet(speciesData);
-      XLSX.utils.book_append_sheet(wb, wsSpecies, "Stok per Jenis");
+      csvContent += "STOK PER JENIS HEWAN\n";
+      csvContent += "Jenis Hewan,Total Stok (Ekor),Tersedia,Terjual,Nilai Jual Stok\n";
+      data.speciesStock.forEach((sp: any) => {
+        csvContent += `${escapeCSV(getSpeciesLabel(sp.species))},${sp.total},${sp.available},${sp.sold},${sp.totalValue}\n`;
+      });
     }
 
   } else if (type === "delivery") {
-    // 1. Delivery Summary
-    const summaryData = [
-      { Indikator: "Total Pengiriman", Nilai: data.totalDeliveries },
-      { Indikator: "Tingkat Keberhasilan", Nilai: `${data.successRate}%` },
-      { Indikator: "Status Terjadwal (SCHEDULED)", Nilai: data.statusCounts?.SCHEDULED || 0 },
-      { Indikator: "Status Transit (IN_TRANSIT)", Nilai: data.statusCounts?.IN_TRANSIT || 0 },
-      { Indikator: "Status Terkirim (DELIVERED)", Nilai: data.statusCounts?.DELIVERED || 0 },
-      { Indikator: "Status Gagal (FAILED)", Nilai: data.statusCounts?.FAILED || 0 },
-    ];
-    const wsSummary = XLSX.utils.json_to_sheet(summaryData);
-    XLSX.utils.book_append_sheet(wb, wsSummary, "Ringkasan Pengiriman");
+    csvContent += "RINGKASAN PENGIRIMAN\n";
+    csvContent += "Indikator,Nilai\n";
+    csvContent += `Total Pengiriman,${data.totalDeliveries}\n`;
+    csvContent += `Tingkat Keberhasilan,${data.successRate}%\n`;
+    csvContent += `Status Terjadwal (SCHEDULED),${data.statusCounts?.SCHEDULED || 0}\n`;
+    csvContent += `Status Transit (IN_TRANSIT),${data.statusCounts?.IN_TRANSIT || 0}\n`;
+    csvContent += `Status Terkirim (DELIVERED),${data.statusCounts?.DELIVERED || 0}\n`;
+    csvContent += `Status Gagal (FAILED),${data.statusCounts?.FAILED || 0}\n\n`;
 
-    // 2. Driver Performance
     if (data.driverPerformance && data.driverPerformance.length > 0) {
-      const driverData = data.driverPerformance.map((d: any) => ({
-        Driver: d.name,
-        "Total Tugas": d.total,
-        Berhasil: d.delivered,
-        Gagal: d.failed,
-        "Tingkat Keberhasilan": d.total > 0 ? `${Math.round((d.delivered / d.total) * 100)}%` : "0%",
-      }));
-      const wsDriver = XLSX.utils.json_to_sheet(driverData);
-      XLSX.utils.book_append_sheet(wb, wsDriver, "Kinerja Driver");
+      csvContent += "KINERJA DRIVER / KURIR\n";
+      csvContent += "Driver,Total Tugas,Berhasil,Gagal,Tingkat Keberhasilan\n";
+      data.driverPerformance.forEach((d: any) => {
+        const rate = d.total > 0 ? `${Math.round((d.delivered / d.total) * 100)}%` : "0%";
+        csvContent += `${escapeCSV(d.name)},${d.total},${d.delivered},${d.failed},${rate}\n`;
+      });
     }
   }
 
-  // Write file
-  XLSX.writeFile(wb, `Laporan_${type}_${getExportDateString()}.xlsx`);
+  // Create Blob and trigger download
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `Laporan_${type}_${getExportDateString()}.csv`);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 // ==========================================
