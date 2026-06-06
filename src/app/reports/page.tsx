@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  DollarSign,
+  Banknote,
   TrendingUp,
   TrendingDown,
   BarChart3,
@@ -65,7 +65,7 @@ export default function ReportsPage() {
   };
 
   const tabs = [
-    { key: "financial" as const, label: "Keuangan", icon: DollarSign },
+    { key: "financial" as const, label: "Keuangan", icon: Banknote },
     { key: "sales" as const, label: "Penjualan", icon: BarChart3 },
     { key: "animal" as const, label: "Stok Hewan", icon: Package },
     { key: "delivery" as const, label: "Pengiriman", icon: Truck },
@@ -214,7 +214,7 @@ function FinancialReport({ data }: { data: any }) {
         <StatCard
           label="Total Pendapatan"
           value={formatCurrency(data.totalRevenue)}
-          icon={<DollarSign size={22} />}
+          icon={<Banknote size={22} />}
           color="var(--color-primary)"
           description={`${data.totalTransactions} transaksi`}
         />
@@ -333,7 +333,7 @@ function SalesReport({ data }: { data: any }) {
         <StatCard
           label="Total Penjualan"
           value={formatCurrency(data.totalRevenue)}
-          icon={<DollarSign size={22} />}
+          icon={<Banknote size={22} />}
           color="var(--color-success)"
         />
       </div>

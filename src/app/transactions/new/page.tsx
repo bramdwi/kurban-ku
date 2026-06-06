@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, DollarSign, Calendar, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Plus, Banknote, Calendar, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { Buyer, Animal } from "@/types";

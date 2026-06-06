@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Edit2, Beef, Tag, CheckCircle, Clock, FileText, Sparkles, DollarSign } from "lucide-react";
+import { ArrowLeft, Edit2, Beef, Tag, CheckCircle, Clock, FileText, Sparkles, Banknote } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Animal } from "@/types";
 import toast from "react-hot-toast";
@@ -204,7 +204,7 @@ export default function AnimalDetailPage() {
           {user?.role === "OWNER" && (
             <div className="card" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
               <h3 style={{ fontSize: "var(--text-base)", fontWeight: 700, borderBottom: "1px solid var(--color-border)", paddingBottom: "var(--space-2)", display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                <DollarSign size={18} style={{ color: "var(--color-success)" }} />
+                <Banknote size={18} style={{ color: "var(--color-success)" }} />
                 Informasi Keuangan
               </h3>
 

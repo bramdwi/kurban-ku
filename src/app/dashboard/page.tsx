@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import {
   Beef,
   ShoppingBag,
-  DollarSign,
+  Banknote,
   TrendingUp,
   AlertCircle,
   FileText,
@@ -106,7 +106,7 @@ export default function DashboardPage() {
         <StatCard
           label="Total Omzet"
           value={formatCurrency(stats.totalRevenue)}
-          icon={<DollarSign />}
+          icon={<Banknote />}
           variant="info"
         />
         <StatCard

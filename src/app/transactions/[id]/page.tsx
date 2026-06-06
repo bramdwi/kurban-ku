@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Trash2, Plus, Calendar, DollarSign, User, MapPin, Phone, FileText } from "lucide-react";
+import { ArrowLeft, Trash2, Plus, Calendar, Banknote, User, MapPin, Phone, FileText } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import Modal from "@/components/ui/Modal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
