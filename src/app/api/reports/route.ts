@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { handleApiError } from '@/lib/errors';
 
 
 export async function GET(request: Request) {
@@ -286,8 +287,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ success: false, error: 'Tipe laporan tidak valid' }, { status: 400 });
   } catch (error: any) {
-    console.error('GET Reports Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'GET Reports');
   }
 }

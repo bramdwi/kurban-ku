@@ -3,9 +3,19 @@ import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { setAuthCookie } from '@/lib/auth';
 import { loginSchema } from '@/lib/validators';
+import { isRateLimited, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(request: Request) {
   try {
+    const ip = await getClientIp();
+    const limited = await isRateLimited(`login:${ip}`, 5, 60 * 1000);
+    if (limited) {
+      return NextResponse.json(
+        { success: false, error: 'Terlalu banyak percobaan login. Silakan coba lagi nanti.' },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     
     // Validate request body

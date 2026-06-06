@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { deliverySchema } from '@/lib/validators';
+import { handleApiError } from '@/lib/errors';
 
 export async function GET(
   request: Request,
@@ -37,9 +39,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: delivery });
   } catch (error: any) {
-    console.error('GET Delivery Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'GET Delivery');
   }
 }
 
@@ -52,6 +52,15 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
+    const validation = deliverySchema.partial().safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { success: false, error: validation.error.issues[0].message },
+        { status: 400 }
+      );
+    }
+    const validatedData = validation.data;
+
     const delivery = await prisma.delivery.findUnique({ where: { id } });
     if (!delivery || delivery.tenantId !== user.tenantId) {
       return NextResponse.json({ success: false, error: 'Pengiriman tidak ditemukan' }, { status: 404 });
@@ -59,10 +68,10 @@ export async function PATCH(
 
     const updateData: any = {};
 
-    if (body.status !== undefined) {
-      updateData.status = body.status;
+    if (validatedData.status !== undefined) {
+      updateData.status = validatedData.status;
       // If delivered, set deliveredAt timestamp
-      if (body.status === 'DELIVERED') {
+      if (validatedData.status === 'DELIVERED') {
         updateData.deliveredAt = new Date();
         // Also update the transaction status to DELIVERED
         await prisma.transaction.update({
@@ -81,7 +90,7 @@ export async function PATCH(
           },
         });
       }
-      if (body.status === 'IN_TRANSIT') {
+      if (validatedData.status === 'IN_TRANSIT') {
         await prisma.notification.create({
           data: {
             tenantId: user.tenantId,
@@ -95,10 +104,10 @@ export async function PATCH(
       }
     }
 
-    if (body.driverId !== undefined) updateData.driverId = body.driverId || null;
-    if (body.scheduledDate !== undefined) updateData.scheduledDate = body.scheduledDate ? new Date(body.scheduledDate) : null;
-    if (body.deliveryAddress !== undefined) updateData.deliveryAddress = body.deliveryAddress;
-    if (body.notes !== undefined) updateData.notes = body.notes;
+    if (validatedData.driverId !== undefined) updateData.driverId = validatedData.driverId || null;
+    if (validatedData.scheduledDate !== undefined) updateData.scheduledDate = validatedData.scheduledDate ? new Date(validatedData.scheduledDate) : null;
+    if (validatedData.deliveryAddress !== undefined) updateData.deliveryAddress = validatedData.deliveryAddress;
+    if (validatedData.notes !== undefined) updateData.notes = validatedData.notes;
 
     const updated = await prisma.delivery.update({
       where: { id },
@@ -112,9 +121,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error: any) {
-    console.error('PATCH Delivery Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'PATCH Delivery');
   }
 }
 
@@ -135,8 +142,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'Pengiriman berhasil dihapus' });
   } catch (error: any) {
-    console.error('DELETE Delivery Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'DELETE Delivery');
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { animalTypeSchema } from '@/lib/validators';
+import { handleApiError } from '@/lib/errors';
 
 export async function PUT(
   request: Request,
@@ -82,9 +83,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true, data: updatedType });
   } catch (error: any) {
-    console.error('PUT Animal Type Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'PUT Animal Type');
   }
 }
 
@@ -124,8 +123,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'Tipe hewan berhasil dihapus' });
   } catch (error: any) {
-    console.error('DELETE Animal Type Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'DELETE Animal Type');
   }
 }

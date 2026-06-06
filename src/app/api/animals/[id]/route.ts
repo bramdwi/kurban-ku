@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { animalSchema } from '@/lib/validators';
+import { handleApiError } from '@/lib/errors';
 
 export async function GET(
   request: Request,
@@ -27,9 +28,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: animal });
   } catch (error: any) {
-    console.error('GET Animal Detail Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'GET Animal Detail');
   }
 }
 
@@ -117,9 +116,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true, data: updatedAnimal });
   } catch (error: any) {
-    console.error('PUT Animal Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'PUT Animal');
   }
 }
 
@@ -175,8 +172,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'Hewan kurban berhasil dihapus' });
   } catch (error: any) {
-    console.error('DELETE Animal Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'DELETE Animal');
   }
 }

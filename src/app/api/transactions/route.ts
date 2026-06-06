@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { transactionSchema } from '@/lib/validators';
 import { generateInvoiceNumber } from '@/lib/utils';
+import { handleApiError } from '@/lib/errors';
 
 export async function GET(request: Request) {
   try {
@@ -43,9 +44,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ success: true, data: transactions });
   } catch (error: any) {
-    console.error('GET Transactions Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'GET Transactions');
   }
 }
 
@@ -216,8 +215,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, data: dbTransaction });
   } catch (error: any) {
-    console.error('POST Transaction Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'POST Transaction');
   }
 }

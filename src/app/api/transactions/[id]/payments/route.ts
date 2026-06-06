@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { paymentSchema } from '@/lib/validators';
+import { handleApiError } from '@/lib/errors';
 
 export async function POST(
   request: Request,
@@ -97,8 +98,6 @@ export async function POST(
 
     return NextResponse.json({ success: true, data: updatedPayment });
   } catch (error: any) {
-    console.error('POST Payment Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'POST Payment');
   }
 }

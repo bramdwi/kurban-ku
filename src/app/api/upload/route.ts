@@ -24,9 +24,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-    if (!validTypes.includes(file.type)) {
+    // Map MIME type to safe extensions and validate
+    const mimeToExt: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/jpg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp'
+    };
+
+    const ext = mimeToExt[file.type];
+    if (!ext) {
       return NextResponse.json(
         { success: false, error: 'Format file tidak didukung (hanya JPEG, PNG, WEBP)' },
         { status: 400 }
@@ -50,8 +57,7 @@ export async function POST(request: Request) {
     // Ensure uploads directory exists
     await mkdir(uploadDir, { recursive: true });
 
-    // Generate unique file name
-    const ext = file.name.split('.').pop();
+    // Generate unique safe file name
     const fileName = `${uuid()}.${ext}`;
     const filePath = join(uploadDir, fileName);
 

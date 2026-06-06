@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { animalSchema } from '@/lib/validators';
 import { generateAnimalCode } from '@/lib/utils';
+import { handleApiError } from '@/lib/errors';
 
 export async function GET(request: Request) {
   try {
@@ -70,9 +71,7 @@ export async function GET(request: Request) {
       totalPages: Math.ceil(total / pageSize),
     });
   } catch (error: any) {
-    console.error('GET Animals Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'GET Animals');
   }
 }
 
@@ -151,8 +150,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, data: newAnimal });
   } catch (error: any) {
-    console.error('POST Animals Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'POST Animals');
   }
 }

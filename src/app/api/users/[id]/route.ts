@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { userSchema } from '@/lib/validators';
+import { handleApiError } from '@/lib/errors';
 
 export async function GET(
   request: Request,
@@ -32,9 +34,7 @@ export async function GET(
       }
     });
   } catch (error: any) {
-    console.error('GET User Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'GET User');
   }
 }
 
@@ -47,25 +47,34 @@ export async function PATCH(
     const { id } = await params;
     const body = await request.json();
 
+    const validation = userSchema.partial().safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { success: false, error: validation.error.issues[0].message },
+        { status: 400 }
+      );
+    }
+    const validatedData = validation.data;
+
     const existingUser = await prisma.user.findUnique({ where: { id } });
     if (!existingUser || existingUser.tenantId !== authUser.tenantId || existingUser.deletedAt) {
       return NextResponse.json({ success: false, error: 'User tidak ditemukan' }, { status: 404 });
     }
 
     const updateData: any = {};
-    if (body.name !== undefined) updateData.name = body.name;
-    if (body.email !== undefined) {
+    if (validatedData.name !== undefined) updateData.name = validatedData.name;
+    if (validatedData.email !== undefined) {
       // Check duplicate email globally
-      const emailUser = await prisma.user.findFirst({ where: { email: body.email, deletedAt: null } });
+      const emailUser = await prisma.user.findFirst({ where: { email: validatedData.email, deletedAt: null } });
       if (emailUser && emailUser.id !== id) {
         return NextResponse.json({ success: false, error: 'Email sudah digunakan' }, { status: 400 });
       }
-      updateData.email = body.email;
+      updateData.email = validatedData.email;
     }
-    if (body.role !== undefined) updateData.role = body.role;
-    if (body.isActive !== undefined) updateData.isActive = body.isActive;
-    if (body.password) {
-      updateData.passwordHash = await bcrypt.hash(body.password, 12);
+    if (validatedData.role !== undefined) updateData.role = validatedData.role;
+    if (validatedData.isActive !== undefined) updateData.isActive = validatedData.isActive;
+    if (validatedData.password) {
+      updateData.passwordHash = await bcrypt.hash(validatedData.password, 12);
     }
 
     const updated = await prisma.user.update({
@@ -84,9 +93,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error: any) {
-    console.error('PATCH User Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'PATCH User');
   }
 }
 
@@ -115,8 +122,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'User berhasil dihapus' });
   } catch (error: any) {
-    console.error('DELETE User Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'DELETE User');
   }
 }

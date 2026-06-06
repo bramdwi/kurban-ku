@@ -66,7 +66,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     <aside
       className={cn(
         "sidebar",
-        isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        isOpen && "open"
       )}
     >
       <div className="sidebar-logo">

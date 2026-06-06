@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { handleApiError } from '@/lib/errors';
 
 export async function GET(request: Request) {
   try {
@@ -42,9 +43,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ success: true, data: { notifications, unreadCount } });
   } catch (error: any) {
-    console.error('GET Notifications Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'GET Notifications');
   }
 }
 
@@ -78,8 +77,6 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json({ success: true, message: 'Notifikasi ditandai sudah dibaca' });
   } catch (error: any) {
-    console.error('PATCH Notifications Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'PATCH Notifications');
   }
 }

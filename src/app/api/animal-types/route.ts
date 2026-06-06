@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { animalTypeSchema } from '@/lib/validators';
+import { handleApiError } from '@/lib/errors';
 
 export async function GET() {
   try {
@@ -19,9 +20,7 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data: types });
   } catch (error: any) {
-    console.error('GET Animal Types Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'GET Animal Types');
   }
 }
 
@@ -89,8 +88,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, data: newType });
   } catch (error: any) {
-    console.error('POST Animal Types Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'POST Animal Types');
   }
 }

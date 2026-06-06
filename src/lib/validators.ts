@@ -83,6 +83,7 @@ export const userSchema = z.object({
   role: z.enum(['OWNER', 'STAFF', 'DRIVER'], {
     message: 'Role wajib dipilih',
   }),
+  isActive: z.boolean().optional(),
 });
 
 // ===== REGISTER =====
@@ -107,6 +108,7 @@ export const deliverySchema = z.object({
   scheduledDate: z.string().optional(),
   deliveryAddress: z.string().optional(),
   notes: z.string().optional(),
+  status: z.enum(['SCHEDULED', 'IN_TRANSIT', 'DELIVERED', 'FAILED']).optional(),
 });
 
 // ===== EXPENSE =====

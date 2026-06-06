@@ -16,7 +16,11 @@ export function exportToExcel(type: string, data: any) {
   let csvContent = "\uFEFF"; // UTF-8 BOM for Excel compatibility
 
   const escapeCSV = (val: any) => {
-    const stringVal = val === null || val === undefined ? "" : String(val);
+    let stringVal = val === null || val === undefined ? "" : String(val);
+    // Mitigate CSV Formula Injection (CWE-1236)
+    if (/^[=\+\-\@\t\r]/.test(stringVal)) {
+      stringVal = "'" + stringVal;
+    }
     if (stringVal.includes(",") || stringVal.includes('"') || stringVal.includes("\n") || stringVal.includes("\r")) {
       return `"${stringVal.replace(/"/g, '""')}"`;
     }

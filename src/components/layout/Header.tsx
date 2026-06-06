@@ -73,7 +73,6 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
         <button
           onClick={onToggleSidebar}
           className="mobile-menu-btn"
-          style={{ display: "flex" }}
           aria-label="Toggle sidebar"
         >
           <Menu size={20} />

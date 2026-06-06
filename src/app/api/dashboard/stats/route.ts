@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { handleApiError } from '@/lib/errors';
 import { subMonths, startOfMonth, endOfMonth, format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
@@ -145,8 +146,6 @@ export async function GET() {
       },
     });
   } catch (error: any) {
-    console.error('Dashboard Stats API Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'Dashboard Stats API');
   }
 }

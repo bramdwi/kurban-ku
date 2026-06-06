@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { userSchema } from '@/lib/validators';
 import bcrypt from 'bcryptjs';
+import { handleApiError } from '@/lib/errors';
 
 export async function GET(request: Request) {
   try {
@@ -37,9 +38,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ success: true, data: users });
   } catch (error: any) {
-    console.error('GET Users Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'GET Users');
   }
 }
 
@@ -90,8 +89,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, data: newUser });
   } catch (error: any) {
-    console.error('POST User Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'POST User');
   }
 }

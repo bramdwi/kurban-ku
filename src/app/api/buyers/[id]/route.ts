@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import { buyerSchema } from '@/lib/validators';
+import { handleApiError } from '@/lib/errors';
 
 export async function GET(
   request: Request,
@@ -27,9 +28,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: buyer });
   } catch (error: any) {
-    console.error('GET Buyer Detail Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'GET Buyer Detail');
   }
 }
 
@@ -72,9 +71,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true, data: updatedBuyer });
   } catch (error: any) {
-    console.error('PUT Buyer Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'PUT Buyer');
   }
 }
 
@@ -117,8 +114,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'Pembeli berhasil dihapus' });
   } catch (error: any) {
-    console.error('DELETE Buyer Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'DELETE Buyer');
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { handleApiError } from '@/lib/errors';
 
 export async function GET(
   request: Request,
@@ -43,9 +44,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: transaction });
   } catch (error: any) {
-    console.error('GET Transaction Detail Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'GET Transaction Detail');
   }
 }
 
@@ -113,8 +112,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true, message: 'Transaksi berhasil dibatalkan dan dihapus' });
   } catch (error: any) {
-    console.error('DELETE Transaction Error:', error);
-    const status = error.message === 'Unauthorized' ? 401 : error.message === 'Forbidden' ? 403 : 500;
-    return NextResponse.json({ success: false, error: error.message || 'Terjadi kesalahan server' }, { status });
+    return handleApiError(error, 'DELETE Transaction');
   }
 }
