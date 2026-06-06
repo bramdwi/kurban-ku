@@ -1,0 +1,250 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  ownerName String   @map("owner_name")
+  phone     String?
+  address   String?
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users         User[]
+  animalTypes   AnimalType[]
+  animals       Animal[]
+  buyers        Buyer[]
+  transactions  Transaction[]
+  deliveries    Delivery[]
+  notifications Notification[]
+  expenses      Expense[]
+
+  @@map("tenants")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  tenantId     String    @map("tenant_id")
+  name         String
+  email        String
+  passwordHash String    @map("password_hash")
+  role         String    @default("STAFF") // OWNER, STAFF, DRIVER
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  transactions  Transaction[]
+  deliveries    Delivery[]
+  notifications Notification[]
+  expenses      Expense[]
+
+  @@unique([tenantId, email])
+  @@map("users")
+}
+
+model AnimalType {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  species     String   // SAPI, KAMBING, DOMBA
+  typeName    String   @map("type_name")
+  minWeight   Float    @map("min_weight")
+  maxWeight   Float    @map("max_weight")
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id])
+  animals Animal[]
+
+  @@unique([tenantId, species, typeName])
+  @@map("animal_types")
+}
+
+model Animal {
+  id            String    @id @default(uuid())
+  tenantId      String    @map("tenant_id")
+  code          String
+  animalTypeId  String?   @map("animal_type_id")
+  species       String    // SAPI, KAMBING, DOMBA
+  weight        Float
+  purchasePrice Float     @map("purchase_price")
+  sellingPrice  Float     @map("selling_price")
+  status        String    @default("AVAILABLE") // AVAILABLE, BOOKED, SOLD, DEAD
+  description   String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  animalType       AnimalType?       @relation(fields: [animalTypeId], references: [id])
+  photos           AnimalPhoto[]
+  transactionItems TransactionItem[]
+
+  @@unique([tenantId, code])
+  @@map("animals")
+}
+
+model AnimalPhoto {
+  id        String   @id @default(uuid())
+  animalId  String   @map("animal_id")
+  photoUrl  String   @map("photo_url")
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  animal Animal @relation(fields: [animalId], references: [id], onDelete: Cascade)
+
+  @@map("animal_photos")
+}
+
+model Buyer {
+  id        String    @id @default(uuid())
+  tenantId  String    @map("tenant_id")
+  name      String
+  phone     String?
+  address   String?
+  notes     String?
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  transactions Transaction[]
+
+  @@map("buyers")
+}
+
+model Transaction {
+  id              String    @id @default(uuid())
+  tenantId        String    @map("tenant_id")
+  invoiceNumber   String    @map("invoice_number")
+  buyerId         String    @map("buyer_id")
+  createdBy       String    @map("created_by")
+  totalAmount     Float     @default(0) @map("total_amount")
+  dpAmount        Float     @default(0) @map("dp_amount")
+  paidAmount      Float     @default(0) @map("paid_amount")
+  remainingAmount Float     @default(0) @map("remaining_amount")
+  paymentStatus   String    @default("UNPAID") @map("payment_status") // UNPAID, DP_PAID, FULLY_PAID
+  status          String    @default("PENDING") // PENDING, CONFIRMED, DELIVERED, CANCELLED
+  notes           String?
+  transactionDate DateTime  @default(now()) @map("transaction_date")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  tenant        Tenant            @relation(fields: [tenantId], references: [id])
+  buyer         Buyer             @relation(fields: [buyerId], references: [id])
+  creator       User              @relation(fields: [createdBy], references: [id])
+  items         TransactionItem[]
+  payments      Payment[]
+  deliveries    Delivery[]
+  notifications Notification[]
+
+  @@unique([tenantId, invoiceNumber])
+  @@map("transactions")
+}
+
+model TransactionItem {
+  id            String   @id @default(uuid())
+  transactionId String   @map("transaction_id")
+  animalId      String   @map("animal_id")
+  price         Float
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  animal      Animal      @relation(fields: [animalId], references: [id])
+
+  @@map("transaction_items")
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  transactionId String   @map("transaction_id")
+  amount        Float
+  paymentType   String   @map("payment_type") // DP, INSTALLMENT, FULL_PAYMENT
+  paymentMethod String?  @map("payment_method")
+  notes         String?
+  paymentDate   DateTime @default(now()) @map("payment_date")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Delivery {
+  id              String    @id @default(uuid())
+  tenantId        String    @map("tenant_id")
+  transactionId   String    @map("transaction_id")
+  driverId        String?   @map("driver_id")
+  scheduledDate   DateTime? @map("scheduled_date")
+  deliveryAddress String?   @map("delivery_address")
+  status          String    @default("SCHEDULED") // SCHEDULED, IN_TRANSIT, DELIVERED, FAILED
+  notes           String?
+  deliveredAt     DateTime? @map("delivered_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+  transaction Transaction     @relation(fields: [transactionId], references: [id])
+  driver      User?           @relation(fields: [driverId], references: [id])
+  photos      DeliveryPhoto[]
+
+  @@map("deliveries")
+}
+
+model DeliveryPhoto {
+  id         String   @id @default(uuid())
+  deliveryId String   @map("delivery_id")
+  photoUrl   String   @map("photo_url")
+  caption    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  delivery Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@map("delivery_photos")
+}
+
+model Notification {
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
+  userId        String?  @map("user_id")
+  transactionId String?  @map("transaction_id")
+  type          String   // PAYMENT_REMINDER, PURCHASE_CONFIRMATION, DELIVERY_UPDATE
+  title         String
+  message       String
+  isRead        Boolean  @default(false) @map("is_read")
+  waStatus      String?  @map("wa_status") // PENDING, SENT, FAILED
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  user        User?        @relation(fields: [userId], references: [id])
+  transaction Transaction? @relation(fields: [transactionId], references: [id])
+
+  @@map("notifications")
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  category    String
+  description String?
+  amount      Float
+  expenseDate DateTime @default(now()) @map("expense_date")
+  createdBy   String?  @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  tenant  Tenant @relation(fields: [tenantId], references: [id])
+  creator User?  @relation(fields: [createdBy], references: [id])
+
+  @@map("expenses")
+}
