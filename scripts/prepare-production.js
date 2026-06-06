@@ -56,7 +56,7 @@ const createPrismaClient = () => {
 };`;
 
   const postgresClientBlock = `import { PrismaClient } from '@prisma/client';
-import { Client } from 'pg';
+import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const globalForPrisma = globalThis as unknown as {
@@ -64,9 +64,8 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 const createPrismaClient = () => {
-  const client = new Client({ connectionString: process.env.DATABASE_URL });
-  client.connect();
-  const adapter = new PrismaPg(client);
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const adapter = new PrismaPg(pool);
   return new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
